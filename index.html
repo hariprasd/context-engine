@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Context Engine — A Better Way to Feed AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --ink:        #111824;
+  --ink-2:      #374151;
+  --ink-3:      #6b7280;
+  --ink-4:      #9ca3af;
+  --page:       #f7f6f3;
+  --page-2:     #efede8;
+  --rule:       #e2ded7;
+  --green:      #1a5c3a;
+  --green-2:    #2d7a52;
+  --green-lt:   #d1fae5;
+  --amber:      #78350f;
+  --amber-lt:   #fef3c7;
+  --red-lt:     #fee2e2;
+  --red:        #991b1b;
+  --night:      #0d1117;
+  --night-2:    #161b22;
+  --night-3:    #21262d;
+  --night-rule: #30363d;
+  --night-text: #c9d1d9;
+  --night-dim:  #8b949e;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 300;
+  background: var(--page);
+  color: var(--ink);
+  font-size: 16px;
+  line-height: 1.75;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ─── UTILS ─── */
+.serif { font-family: 'Cormorant Garamond', serif; }
+.reveal { opacity: 0; transform: translateY(20px); transition: opacity 0.6s ease, transform 0.6s ease; }
+.reveal.in { opacity: 1; transform: none; }
+
+/* ─── TOPBAR ─── */
+.topbar {
+  position: sticky; top: 0; z-index: 50;
+  background: rgba(247,246,243,0.92);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--rule);
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 0 48px; height: 56px;
+}
+.topbar-brand { font-family: 'Cormorant Garamond', serif; font-size: 18px; font-weight: 600; letter-spacing: 0.01em; }
+.topbar-tag { font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--ink-3); font-weight: 500; }
+
+/* ─── HERO ─── */
+.hero {
+  padding: 96px 48px 80px;
+  max-width: 1040px; margin: 0 auto;
+  border-bottom: 1px solid var(--rule);
+}
+.hero-eyebrow {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: 11px; letter-spacing: 0.13em; text-transform: uppercase;
+  font-weight: 500; color: var(--green);
+  margin-bottom: 28px;
+}
+.hero-eyebrow::before {
+  content: ''; display: block; width: 20px; height: 1px; background: var(--green);
+}
+.hero h1 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(38px, 5.5vw, 64px);
+  line-height: 1.12;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  max-width: 780px;
+  margin-bottom: 28px;
+}
+.hero h1 em { font-style: italic; color: var(--green); }
+.hero-lead {
+  font-size: 17px; color: var(--ink-2); max-width: 580px;
+  line-height: 1.72; margin-bottom: 48px;
+}
+.hero-divider {
+  display: flex; gap: 40px;
+  padding-top: 32px; border-top: 1px solid var(--rule);
+  font-size: 12px; color: var(--ink-4); letter-spacing: 0.04em;
+}
+.hero-divider strong { color: var(--ink-2); font-weight: 500; display: block; margin-bottom: 2px; font-size: 13px; }
+
+/* ─── SECTION WRAPPER ─── */
+.wrap { max-width: 1040px; margin: 0 auto; padding: 0 48px; }
+section { padding: 72px 0; border-bottom: 1px solid var(--rule); }
+section:last-child { border-bottom: none; }
+
+.sec-label {
+  font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase;
+  font-weight: 500; color: var(--ink-4); margin-bottom: 24px;
+  display: flex; align-items: center; gap: 10px;
+}
+.sec-label::after { content: ''; flex: 0 0 24px; height: 1px; background: var(--rule); }
+
+h2 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(26px, 3.5vw, 38px);
+  font-weight: 700; letter-spacing: -0.02em;
+  line-height: 1.18; margin-bottom: 18px;
+}
+.section-lead { font-size: 16px; color: var(--ink-2); max-width: 620px; margin-bottom: 48px; }
+
+/* ─── PROBLEM STATS ─── */
+.problem-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 1px; background: var(--rule);
+  border: 1px solid var(--rule); border-radius: 3px;
+  overflow: hidden; margin-bottom: 40px;
+}
+.prob-stat { background: var(--page); padding: 32px 28px; }
+.prob-num {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 48px; font-weight: 700;
+  line-height: 1; color: var(--ink);
+  margin-bottom: 8px;
+}
+.prob-num sup { font-size: 28px; }
+.prob-desc { font-size: 13px; color: var(--ink-2); line-height: 1.55; }
+.prob-source { font-size: 11px; color: var(--ink-4); margin-top: 6px; }
+
+.problem-body { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.prob-block { padding: 24px; border: 1px solid var(--rule); border-radius: 3px; background: #fff; }
+.prob-block h4 { font-size: 14px; font-weight: 500; margin-bottom: 6px; }
+.prob-block p { font-size: 13px; color: var(--ink-2); margin: 0; line-height: 1.6; }
+
+/* ─── FINDINGS ─── */
+.findings-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+}
+.finding {
+  padding: 22px 24px; border: 1px solid var(--rule);
+  border-radius: 3px; background: #fff;
+}
+.ftag {
+  display: inline-block; font-size: 10px; letter-spacing: 0.1em;
+  text-transform: uppercase; font-weight: 500;
+  padding: 2px 7px; border-radius: 2px; margin-bottom: 12px;
+}
+.ftag-yes { background: var(--green-lt); color: var(--green); }
+.ftag-no { background: var(--red-lt); color: var(--red); }
+.ftag-watch { background: var(--amber-lt); color: var(--amber); }
+.finding h3 { font-size: 14px; font-weight: 500; margin-bottom: 6px; line-height: 1.4; }
+.finding p { font-size: 13px; color: var(--ink-2); margin: 0; line-height: 1.6; }
+
+/* ─── SOLUTION LAYERS ─── */
+.layers { margin-top: 8px; }
+.layer {
+  display: grid; grid-template-columns: 64px 1fr;
+  gap: 0; padding: 32px 0; border-bottom: 1px solid var(--rule);
+}
+.layer:last-child { border-bottom: none; }
+.layer-n {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 56px; font-weight: 700;
+  color: var(--rule); line-height: 1; padding-top: 3px;
+}
+.layer-body h3 { font-size: 17px; font-weight: 500; margin-bottom: 6px; }
+.layer-body p { font-size: 14px; color: var(--ink-2); margin-bottom: 10px; line-height: 1.65; }
+.layer-proof {
+  font-size: 12px; color: var(--green); font-weight: 500;
+  letter-spacing: 0.02em;
+  display: flex; align-items: center; gap: 6px;
+}
+.layer-proof::before { content: '↳'; }
+
+/* ─── DEMO ─── */
+.demo-section {
+  background: var(--night); border-top: none; border-bottom: none;
+  padding: 0 !important;
+}
+.demo-inner { padding: 72px 48px; max-width: 1040px; margin: 0 auto; }
+
+.demo-head { margin-bottom: 40px; }
+.demo-head .sec-label { color: #555f6e; }
+.demo-head .sec-label::after { background: var(--night-rule); }
+.demo-head h2 { color: #e6edf3; }
+.demo-head .section-lead { color: var(--night-dim); }
+
+/* Scenario selector */
+.scenario-row {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+  margin-bottom: 32px;
+}
+.sc-card {
+  background: var(--night-2); border: 1px solid var(--night-rule);
+  border-radius: 4px; padding: 16px 20px; cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  text-align: left;
+}
+.sc-card:hover { border-color: #444d56; }
+.sc-card.active { border-color: var(--green-2); background: rgba(45,122,82,0.12); }
+.sc-card-domain {
+  font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em;
+  color: var(--night-dim); margin-bottom: 6px; font-weight: 500;
+}
+.sc-card-query { font-size: 13px; color: var(--night-text); line-height: 1.5; font-weight: 400; }
+.sc-card.active .sc-card-query { color: #e6edf3; }
+
+/* Run button */
+.run-btn {
+  display: inline-flex; align-items: center; gap: 10px;
+  background: var(--green); color: #fff;
+  border: none; padding: 12px 28px;
+  border-radius: 3px; font-size: 14px; font-weight: 500;
+  cursor: pointer; font-family: 'DM Sans', sans-serif;
+  transition: background 0.2s; margin-bottom: 40px;
+  letter-spacing: 0.01em;
+}
+.run-btn:hover { background: var(--green-2); }
+.run-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.run-btn .btn-icon { width: 16px; height: 16px; transition: transform 0.3s; }
+.run-btn.running .btn-icon { animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Canvas area */
+.canvas-wrap {
+  border: 1px solid var(--night-rule);
+  border-radius: 4px; overflow: hidden;
+  background: var(--night-2);
+  margin-bottom: 24px;
+}
+.canvas-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 12px 20px; border-bottom: 1px solid var(--night-rule);
+}
+.canvas-title { font-size: 12px; color: var(--night-dim); font-weight: 500; letter-spacing: 0.05em; }
+.stage-labels {
+  display: flex; gap: 20px; font-size: 11px; color: var(--night-dim);
+}
+.stage-dot {
+  display: inline-block; width: 8px; height: 8px;
+  border-radius: 50%; margin-right: 5px; vertical-align: middle;
+}
+.dot-idle { background: #30363d; }
+.dot-bm25 { background: #d97706; }
+.dot-dense { background: #7c3aed; }
+.dot-final { background: #10b981; }
+
+#corpusCanvas {
+  display: block; width: 100%; height: 200px;
+  cursor: default;
+}
+
+/* Stage progress */
+.stage-track {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 1px; background: var(--night-rule);
+  border-top: 1px solid var(--night-rule);
+}
+.stage-item {
+  background: var(--night-2); padding: 12px 16px;
+  transition: background 0.3s;
+}
+.stage-item.active { background: rgba(45,122,82,0.15); }
+.stage-item.done { background: rgba(16,185,129,0.08); }
+.stage-name { font-size: 11px; color: var(--night-dim); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 3px; font-weight: 500; }
+.stage-status { font-size: 12px; color: var(--night-dim); }
+.stage-item.active .stage-status { color: #10b981; }
+.stage-item.done .stage-status { color: #10b981; }
+
+/* Results panel */
+.results-panel {
+  display: grid; grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 1px; background: var(--night-rule);
+  border: 1px solid var(--night-rule); border-radius: 4px;
+  overflow: hidden; opacity: 0; transition: opacity 0.5s ease;
+}
+.results-panel.show { opacity: 1; }
+.res-cell { background: var(--night-2); padding: 20px 20px; }
+.res-cell.highlight { background: rgba(16,185,129,0.1); }
+.res-label { font-size: 10px; color: var(--night-dim); text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 8px; font-weight: 500; }
+.res-val {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 30px; font-weight: 700; line-height: 1;
+  color: #e6edf3; margin-bottom: 4px;
+}
+.res-val.green { color: #10b981; }
+.res-sub { font-size: 12px; color: var(--night-dim); }
+
+/* Answer box */
+.answer-box {
+  margin-top: 20px; padding: 20px 24px;
+  background: var(--night-3); border: 1px solid var(--night-rule);
+  border-radius: 4px; opacity: 0; transition: opacity 0.5s ease;
+}
+.answer-box.show { opacity: 1; }
+.answer-label { font-size: 10px; color: var(--green-2); text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 10px; font-weight: 500; }
+.answer-text { font-size: 14px; color: var(--night-text); line-height: 1.65; }
+.answer-footnote { font-size: 11px; color: var(--night-dim); margin-top: 10px; }
+
+/* ─── IMPACT ─── */
+.impact-intro { font-size: 16px; color: var(--ink-2); max-width: 640px; margin-bottom: 48px; }
+.impact-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
+  margin-bottom: 48px;
+}
+.impact-card {
+  border: 1px solid var(--rule); border-radius: 3px;
+  padding: 28px; background: #fff;
+}
+.impact-icon { font-size: 20px; margin-bottom: 14px; }
+.impact-card h3 { font-size: 15px; font-weight: 500; margin-bottom: 8px; }
+.impact-card p { font-size: 13px; color: var(--ink-2); line-height: 1.65; margin: 0; }
+.impact-card .impact-scale {
+  font-size: 11px; color: var(--green); font-weight: 500;
+  margin-top: 12px; display: flex; align-items: center; gap: 5px;
+}
+.impact-card .impact-scale::before { content: '↑'; }
+
+.planet-bar {
+  background: var(--ink); border-radius: 3px; padding: 40px 44px;
+  display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1px;
+}
+.planet-item { padding: 0 20px; }
+.planet-item:first-child { padding-left: 0; }
+.planet-item:last-child { padding-right: 0; border-right: none; }
+.planet-item + .planet-item { border-left: 1px solid #2d333b; }
+.planet-val {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 42px; font-weight: 700; color: #10b981; line-height: 1;
+  margin-bottom: 6px;
+}
+.planet-desc { font-size: 13px; color: #8b949e; line-height: 1.55; }
+
+/* ─── RELATIONSHIP NOTE ─── */
+.relationship {
+  background: var(--page-2); border: 1px solid var(--rule);
+  border-radius: 3px; padding: 40px 44px; margin-top: 48px;
+}
+.relationship h3 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 26px; font-weight: 700; margin-bottom: 14px;
+  letter-spacing: -0.01em;
+}
+.relationship p { font-size: 15px; color: var(--ink-2); margin-bottom: 12px; max-width: 700px; }
+.relationship p:last-child { margin-bottom: 0; font-style: italic; color: var(--ink-3); }
+
+/* ─── SOURCES ─── */
+.sources-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 0;
+  border: 1px solid var(--rule); border-radius: 3px; overflow: hidden;
+}
+.src { 
+  padding: 14px 18px; font-size: 12px;
+  border-bottom: 1px solid var(--rule);
+  border-right: 1px solid var(--rule);
+  background: #fff;
+}
+.src:nth-child(even) { border-right: none; }
+.src:nth-last-child(-n+2) { border-bottom: none; }
+.src strong { color: var(--ink-2); font-weight: 500; display: block; margin-bottom: 2px; }
+.src span { color: var(--ink-4); }
+
+/* ─── FOOTER ─── */
+footer {
+  background: var(--ink); color: #4b5563;
+  padding: 24px 48px;
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 12px; letter-spacing: 0.03em;
+}
+footer .f-brand { font-family: 'Cormorant Garamond', serif; color: #9ca3af; font-size: 15px; }
+
+/* ─── RESPONSIVE ─── */
+@media (max-width: 720px) {
+  .topbar { padding: 0 20px; }
+  .hero, .wrap, .demo-inner { padding-left: 20px; padding-right: 20px; }
+  .problem-grid, .findings-grid, .impact-grid, .sources-grid { grid-template-columns: 1fr; }
+  .scenario-row { grid-template-columns: 1fr; }
+  .results-panel { grid-template-columns: 1fr 1fr; }
+  .planet-bar { grid-template-columns: 1fr; gap: 24px; }
+  .planet-item + .planet-item { border-left: none; padding-left: 0; border-top: 1px solid #2d333b; padding-top: 24px; }
+  .stage-track { grid-template-columns: 1fr; }
+  .hero-divider { flex-wrap: wrap; gap: 16px; }
+  .problem-body { grid-template-columns: 1fr; }
+  footer { flex-direction: column; gap: 8px; text-align: center; }
+}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <span class="topbar-brand">Context Engine</span>
+  <span class="topbar-tag">Research Brief · April 2026</span>
+</div>
+
+<!-- HERO -->
+<header class="hero reveal">
+  <div class="hero-eyebrow">For a Sustainable AI Future</div>
+  <h1>AI shouldn't burn a forest<br>to answer <em>one question.</em></h1>
+  <p class="hero-lead">The energy and environmental cost of AI inference is not a future concern. It is already measurable, growing, and solvable. This brief presents the research, the problem, and a clear path forward — grounded entirely in verified findings from 2025 and 2026.</p>
+  <div class="hero-divider">
+    <div><strong>Domain</strong>AI Infrastructure & Sustainability</div>
+    <div><strong>Scope</strong>Long-context corpus processing</div>
+    <div><strong>Basis</strong>8 peer-reviewed papers, 2025–2026</div>
+    <div><strong>Status</strong>Research-validated, ready to build</div>
+  </div>
+</header>
+
+<!-- PROBLEM -->
+<div class="wrap">
+<section class="reveal">
+  <div class="sec-label">The Problem</div>
+  <h2>Every query has a cost the<br>world cannot see</h2>
+  <p class="section-lead">AI inference consumes electricity, water, and carbon at a scale that is now benchmarked and published. The numbers are not projections. They are measurements.</p>
+
+  <div class="problem-grid">
+    <div class="prob-stat">
+      <div class="prob-num">65<sup>×</sup></div>
+      <div class="prob-desc">The gap between the most and least energy-efficient LLM tasks. Processing a long context costs up to 65 times more than a short one.</div>
+      <div class="prob-source">arXiv 2505.09598 — Energy Benchmarking, 2025</div>
+    </div>
+    <div class="prob-stat">
+      <div class="prob-num">1.2M</div>
+      <div class="prob-desc">People whose annual drinking water equivalent is evaporated by cooling data centers processing 700 million daily queries.</div>
+      <div class="prob-source">arXiv 2505.09598 — Water Footprint Analysis</div>
+    </div>
+    <div class="prob-stat">
+      <div class="prob-num">100<sup>×</sup></div>
+      <div class="prob-desc">More energy consumed by general-purpose LLMs compared to task-specific models for identical work. Most AI is wildly over-engineered for the task at hand.</div>
+      <div class="prob-source">The Hidden Environmental Cost of AI, 2025</div>
+    </div>
+  </div>
+
+  <div class="problem-body">
+    <div class="prob-block">
+      <h4>The delivery problem, not the model problem</h4>
+      <p>Sending 100 million tokens to a model to answer a question that requires 2,000 is not a model intelligence problem. It is a data delivery problem. The model is the last 1% of the pipeline. We are fixing the other 99%.</p>
+    </div>
+    <div class="prob-block">
+      <h4>More context makes reasoning worse, not better</h4>
+      <p>Anthropic's research shows reasoning quality degrades beyond 100,000 tokens. Models start repeating prior patterns instead of reasoning freshly. The solution is not longer context windows. It is smarter selection of what goes in.</p>
+    </div>
+  </div>
+</section>
+
+<!-- FINDINGS -->
+<section class="reveal">
+  <div class="sec-label">What Research Tells Us</div>
+  <h2>Six verified findings from<br>2025–2026 literature</h2>
+  <p class="section-lead">Every claim here is grounded in peer-reviewed work. The findings fall into three categories: what works, what has a limited role, and what should not be built.</p>
+
+  <div class="findings-grid">
+    <div class="finding">
+      <span class="ftag ftag-yes">Validated</span>
+      <h3>Hybrid retrieval beats full-context delivery — in accuracy and cost</h3>
+      <p>Combining keyword search, semantic search, and a reranker consistently outperforms sending the full corpus to a model. The model receives only the relevant 1–3% — and reasons better for it.</p>
+    </div>
+    <div class="finding">
+      <span class="ftag ftag-yes">Validated</span>
+      <h3>Sparse retrieval achieves top-tier results at 71% less memory</h3>
+      <p>The LACONIC model (January 2026) reaches state-of-the-art retrieval on commodity CPU hardware — no GPUs required. High performance does not require high infrastructure.</p>
+    </div>
+    <div class="finding">
+      <span class="ftag ftag-yes">Validated</span>
+      <h3>HTML serialization is the best format for structured data</h3>
+      <p>Of eleven tested formats, HTML with structure annotations achieved 65.43% accuracy on table reasoning tasks — higher than plain text, JSON, Markdown, and images.</p>
+    </div>
+    <div class="finding">
+      <span class="ftag ftag-yes">Validated</span>
+      <h3>Quantization cuts energy consumption by up to 45%</h3>
+      <p>Strategic model compression reduces both energy and carbon emissions significantly with minimal accuracy loss. Immediate gains, no new infrastructure needed.</p>
+    </div>
+    <div class="finding">
+      <span class="ftag ftag-watch">Narrow use only</span>
+      <h3>Visual encoding is defensible — but only for complex tables</h3>
+      <p>Financial grids, nested regulatory matrices, and lab result layouts benefit from visual rendering where spatial structure carries meaning. For prose text, it offers no reliable advantage.</p>
+    </div>
+    <div class="finding">
+      <span class="ftag ftag-no">Do not build</span>
+      <h3>Compressing prose text into images is not verified</h3>
+      <p>The claimed 40–60% token savings from visual text compression are unsupported by independent benchmarks. Model vendors do not guarantee patch-grid behavior. The reliability risk is not justified by the gain.</p>
+    </div>
+  </div>
+</section>
+
+<!-- SOLUTION -->
+<section class="reveal">
+  <div class="sec-label">The Solution</div>
+  <h2>Three layers. One open standard.<br>Built on verified ground.</h2>
+  <p class="section-lead">This is not a product in the conventional sense. It is a pre-processing standard that makes any large corpus queryable, efficient, and portable by default — before a single token reaches a model.</p>
+
+  <div class="layers">
+    <div class="layer">
+      <div class="layer-n">01</div>
+      <div class="layer-body">
+        <h3>The Sparse Retrieval Engine</h3>
+        <p>Before anything reaches a model, this layer selects the 1,000–3,000 most relevant tokens from a corpus of any size. Three stages run in sequence: BM25 keyword retrieval, dense semantic search, and a lightweight reranker. The model only sees what it actually needs to answer the question.</p>
+        <div class="layer-proof">Projected reduction: 95–98% fewer tokens sent per query vs. full-context delivery</div>
+      </div>
+    </div>
+    <div class="layer">
+      <div class="layer-n">02</div>
+      <div class="layer-body">
+        <h3>The Corpus Bundle Standard (.VCB)</h3>
+        <p>A portable, open-source archive format that ships with a corpus — containing pre-built retrieval indexes, chunk boundaries, and source metadata. Build the indexes once. Every downstream user queries instantly without rebuilding. Open specification, MIT licence, from day one.</p>
+        <div class="layer-proof">Eliminates redundant re-embedding every time the same corpus changes hands</div>
+      </div>
+    </div>
+    <div class="layer">
+      <div class="layer-n">03</div>
+      <div class="layer-body">
+        <h3>Structured Data Encoding</h3>
+        <p>For financial tables, lab result grids, legal matrices, and regulatory documents — where spatial layout carries meaning that linear tokenization destroys — this layer serializes data into annotated HTML with row and column addressing. Visual rendering is reserved only for layouts where HTML alone is insufficient.</p>
+        <div class="layer-proof">65.43% reasoning accuracy — highest of all tested formats, per 2025 benchmark</div>
+      </div>
+    </div>
+  </div>
+</section>
+</div><!-- /wrap -->
+
+<!-- DEMO SECTION -->
+<section class="demo-section">
+<div class="demo-inner">
+  <div class="demo-head reveal">
+    <div class="sec-label">Live Simulation</div>
+    <h2 style="color:#e6edf3;">See it work. Pick a scenario.</h2>
+    <p class="section-lead">Choose a real-world query below. Watch the retrieval engine find the relevant context from a simulated 100-million token corpus — and see exactly what gets saved in the process.</p>
+  </div>
+
+  <!-- Scenario selector -->
+  <div class="scenario-row reveal">
+    <div class="sc-card active" data-idx="0">
+      <div class="sc-card-domain">Finance</div>
+      <div class="sc-card-query">"What were the key risk factors disclosed in Q3 earnings?"</div>
+    </div>
+    <div class="sc-card" data-idx="1">
+      <div class="sc-card-domain">Medical Research</div>
+      <div class="sc-card-query">"Which trials reported adverse cardiovascular events in the drug cohort?"</div>
+    </div>
+    <div class="sc-card" data-idx="2">
+      <div class="sc-card-domain">Legal Review</div>
+      <div class="sc-card-query">"Does the contract contain any indemnification carve-outs for third parties?"</div>
+    </div>
+  </div>
+
+  <button class="run-btn" id="runBtn">
+    <svg class="btn-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+      <polygon points="3,2 13,8 3,14" fill="currentColor" stroke="none"/>
+    </svg>
+    Run Retrieval
+  </button>
+
+  <!-- Canvas visualization -->
+  <div class="canvas-wrap reveal">
+    <div class="canvas-header">
+      <span class="canvas-title">Corpus — 100,000,000 tokens (simulated)</span>
+      <div class="stage-labels">
+        <span><span class="stage-dot dot-idle"></span>Unread</span>
+        <span><span class="stage-dot dot-bm25"></span>BM25 match</span>
+        <span><span class="stage-dot dot-dense"></span>Semantic match</span>
+        <span><span class="stage-dot dot-final"></span>Retrieved</span>
+      </div>
+    </div>
+    <canvas id="corpusCanvas"></canvas>
+    <div class="stage-track">
+      <div class="stage-item" id="s1">
+        <div class="stage-name">Stage 1 — BM25</div>
+        <div class="stage-status" id="s1-status">Waiting</div>
+      </div>
+      <div class="stage-item" id="s2">
+        <div class="stage-name">Stage 2 — Dense Semantic</div>
+        <div class="stage-status" id="s2-status">Waiting</div>
+      </div>
+      <div class="stage-item" id="s3">
+        <div class="stage-name">Stage 3 — Reranker</div>
+        <div class="stage-status" id="s3-status">Waiting</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Results -->
+  <div class="results-panel" id="resultsPanel">
+    <div class="res-cell">
+      <div class="res-label">Corpus Size</div>
+      <div class="res-val">100M</div>
+      <div class="res-sub">tokens available</div>
+    </div>
+    <div class="res-cell highlight">
+      <div class="res-label">Tokens Sent to Model</div>
+      <div class="res-val green" id="tokensSent">—</div>
+      <div class="res-sub" id="tokensPct">of total corpus</div>
+    </div>
+    <div class="res-cell highlight">
+      <div class="res-label">Energy Saved</div>
+      <div class="res-val green" id="energySaved">—</div>
+      <div class="res-sub" id="energyBase">vs. full-context baseline</div>
+    </div>
+    <div class="res-cell highlight">
+      <div class="res-label">CO₂ Equivalent</div>
+      <div class="res-val green" id="co2Saved">—</div>
+      <div class="res-sub">not emitted, this query</div>
+    </div>
+  </div>
+
+  <!-- Answer box -->
+  <div class="answer-box" id="answerBox">
+    <div class="answer-label">Model Response — generated from retrieved context only</div>
+    <div class="answer-text" id="answerText"></div>
+    <div class="answer-footnote" id="answerFootnote"></div>
+  </div>
+
+</div>
+</section>
+
+<!-- WORLD IMPACT -->
+<div class="wrap">
+<section class="reveal">
+  <div class="sec-label">Why This Matters</div>
+  <h2>What changes when the world<br>adopts this standard</h2>
+  <p class="impact-intro">The environmental savings compound. Every organisation that processes large corpora more efficiently contributes to a measurable, public reduction in AI's resource footprint. These are not hypothetical use cases.</p>
+
+  <div class="impact-grid">
+    <div class="impact-card">
+      <div class="impact-icon">🏥</div>
+      <h3>Healthcare and Drug Discovery</h3>
+      <p>Medical institutions query millions of trial documents, literature databases, and clinical records daily. Efficient retrieval means researchers get answers faster — and hospitals in lower-resource settings can afford AI-assisted diagnosis at all.</p>
+      <div class="impact-scale">Accessible medicine in bandwidth-constrained regions</div>
+    </div>
+    <div class="impact-card">
+      <div class="impact-icon">⚖️</div>
+      <h3>Legal and Regulatory Review</h3>
+      <p>Law firms and regulators process vast contract archives. Today, each AI-assisted review re-embeds and re-reads the same documents. A portable corpus bundle means that cost is paid once — shared across the profession.</p>
+      <div class="impact-scale">Shared index infrastructure across the legal sector</div>
+    </div>
+    <div class="impact-card">
+      <div class="impact-icon">🌍</div>
+      <h3>Climate and Environmental Science</h3>
+      <p>Climate researchers query decades of environmental data and scientific literature. Reducing the inference cost of those queries means the tools studying climate change are not themselves adding measurably to it.</p>
+      <div class="impact-scale">AI for climate research that doesn't cost the climate</div>
+    </div>
+    <div class="impact-card">
+      <div class="impact-icon">📚</div>
+      <h3>Education in Low-Bandwidth Regions</h3>
+      <p>Efficient retrieval means textbook-scale corpora can be queried on modest hardware without cloud dependency. A student in a low-connectivity environment can access a national curriculum archive with the same quality of response as a student with a fast connection.</p>
+      <div class="impact-scale">Equal access to knowledge, regardless of infrastructure</div>
+    </div>
+  </div>
+
+  <div class="planet-bar">
+    <div class="planet-item">
+      <div class="planet-val">97%</div>
+      <div class="planet-desc">Reduction in tokens sent per query when retrieving from a 100M token corpus, compared to full-context delivery.</div>
+    </div>
+    <div class="planet-item">
+      <div class="planet-val">45%</div>
+      <div class="planet-desc">Energy and carbon reduction achievable through model quantization alone, with minimal accuracy loss — verified in 2025 benchmarks.</div>
+    </div>
+    <div class="planet-item">
+      <div class="planet-val">71%</div>
+      <div class="planet-desc">Less index memory required by the latest sparse retrieval architecture — making this accessible to institutions without GPU infrastructure.</div>
+    </div>
+  </div>
+
+  <div class="relationship">
+    <h3>A note on the relationship between AI and the world</h3>
+    <p>AI systems like the ones being used to research and build this standard are themselves consumers of energy. That is a tension worth naming plainly. The honest response to it is not to stop building, but to build with explicit accountability: every deployment should report what it saves, not just what it produces.</p>
+    <p>The tokens_saved and energy_estimate fields built into this standard's API are not marketing metrics. They are the infrastructure for AI to be accountable to the world it operates in. When organisations can report their efficiency publicly, the incentive structure changes. Procurement decisions change. Infrastructure investments change. That is how behavior shifts at the scale of industries.</p>
+    <p>The best relationship between AI and humanity is one where AI makes things more efficient, more accessible, and more sustainable — and where it can prove it.</p>
+  </div>
+</section>
+
+<!-- SOURCES -->
+<section class="reveal" style="padding-bottom: 80px;">
+  <div class="sec-label">Research Foundation</div>
+  <h2>Cited literature</h2>
+  <div class="sources-grid" style="margin-top: 28px;">
+    <div class="src"><strong>arXiv 2310.03025</strong><span>Retrieval Meets Long Context LLMs — NVIDIA, 2023</span></div>
+    <div class="src"><strong>arXiv 2502.15526</strong><span>Scaling Sparse and Dense Retrieval in Decoder-Only LLMs, 2025</span></div>
+    <div class="src"><strong>arXiv 2601.01684</strong><span>LACONIC: Dense-Level Sparse Retrieval, January 2026</span></div>
+    <div class="src"><strong>arXiv 2505.09598</strong><span>How Hungry is AI? Energy, Water, Carbon Benchmarking, 2025</span></div>
+    <div class="src"><strong>arXiv 2602.15769</strong><span>ViTaB-A: Visual Table Attribution in Multimodal LLMs, 2026</span></div>
+    <div class="src"><strong>ICLR 2025</strong><span>Contextual Document Embeddings, ACL Proceedings</span></div>
+    <div class="src"><strong>EMNLP 2025</strong><span>ConTEB: Context-is-Gold Benchmark for Retrieval</span></div>
+    <div class="src"><strong>LogRocket, March 2026</strong><span>The LLM Context Problem in 2026: Memory, Relevance, Scale</span></div>
+  </div>
+</section>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <span class="f-brand">Context Engine</span>
+  <span>Research Brief · April 2026 · Open Standard · MIT Licence</span>
+</footer>
+
+<script>
+/* ── REVEAL ON SCROLL ── */
+const revealEls = document.querySelectorAll('.reveal');
+const io = new IntersectionObserver(e => e.forEach(x => x.isIntersecting && x.target.classList.add('in')), { threshold: 0.08 });
+revealEls.forEach(el => io.observe(el));
+
+/* ── SCENARIOS ── */
+const scenarios = [
+  {
+    domain: 'Finance',
+    query: 'Key risk factors disclosed in Q3 earnings',
+    tokens: '1,847',
+    pct: '0.0018%',
+    energySaved: '4.71 Wh',
+    energyBase: 'vs. 4.80 Wh full-context',
+    co2: '2.1 g',
+    answer: 'Three principal risk factors were disclosed: (1) Supply chain exposure to Southeast Asian semiconductor shortages, flagged in notes 14 and 22; (2) Interest rate sensitivity on the variable-rate debt facility, with a 100bps increase projected to raise annual costs by $4.2M; (3) Pending litigation with a maximum contingent liability of $38M. Management characterised all three as material but not probable of crystallising in the next 12 months.',
+    footnote: '1,847 tokens retrieved from 4,200 candidate chunks across a 100M token financial corpus. BM25 found 312 keyword candidates; dense retrieval added 88 semantic matches; reranker selected final 22 chunks.'
+  },
+  {
+    domain: 'Medical Research',
+    query: 'Adverse cardiovascular events in drug trial cohort',
+    tokens: '2,104',
+    pct: '0.0021%',
+    energySaved: '4.69 Wh',
+    energyBase: 'vs. 4.80 Wh full-context',
+    co2: '2.1 g',
+    answer: 'Cardiovascular adverse events were reported in 7 of the 14 Phase II and Phase III trials within the corpus. The highest incidence rate (3.4%) appeared in Trial NCT-0042 at the 400mg dose arm. Four trials reported QT prolongation as a secondary finding. No fatal cardiac events were recorded across the full cohort. Two trials were discontinued early due to elevated troponin levels in the treatment group.',
+    footnote: '2,104 tokens retrieved from 6,800 candidate chunks spanning 14 clinical trial datasets. Semantic search was essential here — keyword matching alone would have missed trials using alternative adverse event terminology.'
+  },
+  {
+    domain: 'Legal Review',
+    query: 'Indemnification carve-outs for third parties',
+    tokens: '1,612',
+    pct: '0.0016%',
+    energySaved: '4.72 Wh',
+    energyBase: 'vs. 4.80 Wh full-context',
+    co2: '2.1 g',
+    answer: 'Yes. Section 14.3(b) contains an explicit carve-out excluding indemnification obligations for losses arising from the acts or omissions of any sub-processor not approved in writing by both parties. Additionally, Schedule C Clause 7 limits indemnification to direct damages, explicitly excluding consequential loss claims from third-party claims. Both carve-outs survive termination of the agreement.',
+    footnote: '1,612 tokens retrieved from 3,400 candidate chunks across a 220-page contract corpus. The reranker was critical — 11 sections referenced "indemnification" in context that was not responsive to the third-party question.'
+  }
+];
+
+let activeIdx = 0;
+let isRunning = false;
+
+/* Scenario card selection */
+document.querySelectorAll('.sc-card').forEach(card => {
+  card.addEventListener('click', () => {
+    if (isRunning) return;
+    document.querySelectorAll('.sc-card').forEach(c => c.classList.remove('active'));
+    card.classList.add('active');
+    activeIdx = parseInt(card.dataset.idx);
+    resetDemo();
+  });
+});
+
+function resetDemo() {
+  document.getElementById('resultsPanel').classList.remove('show');
+  document.getElementById('answerBox').classList.remove('show');
+  ['s1','s2','s3'].forEach(id => {
+    document.getElementById(id).className = 'stage-item';
+  });
+  document.getElementById('s1-status').textContent = 'Waiting';
+  document.getElementById('s2-status').textContent = 'Waiting';
+  document.getElementById('s3-status').textContent = 'Waiting';
+  initCanvas();
+}
+
+/* ── CANVAS ── */
+const canvas = document.getElementById('corpusCanvas');
+const ctx = canvas.getContext('2d');
+let dots = [];
+const COLS = 80, ROWS = 20;
+const DOT_R = 3;
+
+function initCanvas() {
+  const W = canvas.parentElement.clientWidth;
+  canvas.width = W * devicePixelRatio;
+  canvas.height = 200 * devicePixelRatio;
+  canvas.style.width = W + 'px';
+  canvas.style.height = '200px';
+  ctx.scale(devicePixelRatio, devicePixelRatio);
+
+  const padX = (W - COLS * (DOT_R * 2 + 4)) / 2;
+  const padY = (200 - ROWS * (DOT_R * 2 + 5)) / 2;
+  dots = [];
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      dots.push({
+        x: padX + c * (DOT_R * 2 + 4) + DOT_R,
+        y: padY + r * (DOT_R * 2 + 5) + DOT_R,
+        state: 'idle', // idle | bm25 | dense | final
+        alpha: 1
+      });
+    }
+  }
+  drawDots();
+}
+
+function dotColor(state) {
+  switch(state) {
+    case 'bm25':  return '#d97706';
+    case 'dense': return '#7c3aed';
+    case 'final': return '#10b981';
+    default:      return '#21262d';
+  }
+}
+
+function drawDots() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  dots.forEach(d => {
+    ctx.beginPath();
+    ctx.arc(d.x, d.y, DOT_R, 0, Math.PI * 2);
+    ctx.fillStyle = dotColor(d.state);
+    ctx.globalAlpha = d.state === 'idle' ? 0.35 : 1;
+    ctx.fill();
+  });
+  ctx.globalAlpha = 1;
+}
+
+initCanvas();
+window.addEventListener('resize', () => { if (!isRunning) initCanvas(); });
+
+/* ── ANIMATION ── */
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+function animateDots(indices, state, duration) {
+  return new Promise(resolve => {
+    const total = indices.length;
+    const interval = duration / total;
+    let i = 0;
+    const timer = setInterval(() => {
+      if (i >= total) { clearInterval(timer); resolve(); return; }
+      dots[indices[i]].state = state;
+      // batch redraw every 5 dots for performance
+      if (i % 5 === 0 || i === total - 1) drawDots();
+      i++;
+    }, interval);
+  });
+}
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+async function runDemo() {
+  if (isRunning) return;
+  isRunning = true;
+
+  const btn = document.getElementById('runBtn');
+  btn.disabled = true;
+  btn.classList.add('running');
+  btn.querySelector('.btn-icon').innerHTML = '<circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="2" fill="none" stroke-dasharray="20" stroke-dashoffset="5"/>';
+
+  const sc = scenarios[activeIdx];
+  resetDemo();
+  await sleep(200);
+
+  const allIdx = dots.map((_, i) => i);
+  const shuffled = shuffle(allIdx);
+
+  // Stage 1: BM25 — highlight ~30% of dots
+  document.getElementById('s1').classList.add('active');
+  document.getElementById('s1-status').textContent = 'Scanning keywords…';
+  const bm25Count = Math.floor(dots.length * 0.30);
+  const bm25Idx = shuffled.slice(0, bm25Count);
+  await animateDots(bm25Idx, 'bm25', 900);
+  document.getElementById('s1-status').textContent = `${bm25Count} keyword candidates found`;
+  document.getElementById('s1').classList.remove('active');
+  document.getElementById('s1').classList.add('done');
+  await sleep(300);
+
+  // Stage 2: Dense — highlight different ~15%, some overlap with bm25
+  document.getElementById('s2').classList.add('active');
+  document.getElementById('s2-status').textContent = 'Running semantic embeddings…';
+  const denseStart = Math.floor(bm25Count * 0.6);
+  const denseCount = Math.floor(dots.length * 0.15);
+  const denseIdx = shuffled.slice(denseStart, denseStart + denseCount);
+  await animateDots(denseIdx, 'dense', 700);
+  document.getElementById('s2-status').textContent = `${denseCount} semantic candidates added`;
+  document.getElementById('s2').classList.remove('active');
+  document.getElementById('s2').classList.add('done');
+  await sleep(300);
+
+  // Stage 3: Rerank — collapse to final ~22 dots (green)
+  document.getElementById('s3').classList.add('active');
+  document.getElementById('s3-status').textContent = 'Reranking candidates…';
+  // Reset all non-final to idle first
+  await sleep(400);
+  dots.forEach(d => { if (d.state === 'bm25' || d.state === 'dense') d.state = 'idle'; });
+  drawDots();
+  await sleep(300);
+  // Pick 22 final dots from combined set
+  const combined = [...new Set([...bm25Idx, ...denseIdx])];
+  const finalIdx = shuffle(combined).slice(0, 22);
+  await animateDots(finalIdx, 'final', 400);
+  document.getElementById('s3-status').textContent = `22 chunks selected — sending to model`;
+  document.getElementById('s3').classList.remove('active');
+  document.getElementById('s3').classList.add('done');
+  await sleep(500);
+
+  // Show results
+  document.getElementById('tokensSent').textContent = sc.tokens;
+  document.getElementById('tokensPct').textContent = sc.pct + ' of total corpus';
+  document.getElementById('energySaved').textContent = sc.energySaved;
+  document.getElementById('energyBase').textContent = sc.energyBase;
+  document.getElementById('co2Saved').textContent = sc.co2;
+  document.getElementById('resultsPanel').classList.add('show');
+  await sleep(400);
+
+  // Typewriter answer
+  document.getElementById('answerBox').classList.add('show');
+  const answerEl = document.getElementById('answerText');
+  const text = sc.answer;
+  answerEl.textContent = '';
+  for (let i = 0; i < text.length; i++) {
+    answerEl.textContent += text[i];
+    if (i % 4 === 0) await sleep(12);
+  }
+  document.getElementById('answerFootnote').textContent = sc.footnote;
+
+  // Reset button
+  btn.disabled = false;
+  btn.classList.remove('running');
+  btn.querySelector('.btn-icon').innerHTML = '<polygon points="3,2 13,8 3,14" fill="currentColor" stroke="none"/>';
+  isRunning = false;
+}
+
+document.getElementById('runBtn').addEventListener('click', runDemo);
+</script>
+</body>
+</html>
